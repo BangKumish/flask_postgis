@@ -1,86 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Data Explorer</title>
+    <title>Sistem Informasi Geografis</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
         }
 
         body {
-            background-color: #1a1a1a;
-            color: #ffffff;
+            background-color: #20232a;
+            color: #61dafb;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 20px;
         }
 
         header {
-            background: linear-gradient(135deg, #000000, #1f1f1f);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            background: #282c34;
+            color: #61dafb;
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 4px solid #61dafb;
         }
 
         header h1 {
-            font-size: 2.5rem;
-            margin: 0;
-            text-align: center;
-            color: #00ff9d;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
         }
 
         .subtitle {
-            text-align: center;
-            color: #808080;
-            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            color: #61dafb;
+            opacity: 0.8;
         }
 
         #map-container {
-            background: #2d2d2d;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin: 20px 0;
+            padding: 10px;
+            background: #282c34;
+            border-radius: 10px;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
         }
 
         #map {
-            height: 70vh;
-            width: 100%;
-            border-radius: 4px;
+            height: 65vh;
+            border-radius: 8px;
         }
 
         footer {
+            padding: 15px;
+            background-color: #282c34;
             text-align: center;
-            padding: 20px;
-            color: #808080;
-            font-size: 0.9rem;
+            color: #ffffff;
+            font-size: 0.85rem;
+            border-top: 4px solid #61dafb;
+            margin-top: 30px;
         }
 
-        .leaflet-control-layers {
-            background-color: #2d2d2d !important;
-            color: #ffffff !important;
-            border: 1px solid #404040 !important;
-        }
-
-        .leaflet-control-layers-expanded {
-            background-color: #2d2d2d !important;
-            color: #ffffff !important;
-        }
-
+        .leaflet-control-layers,
         .leaflet-control-scale {
-            background-color: rgba(45, 45, 45, 0.8) !important;
+            background-color: #333844 !important;
             color: #ffffff !important;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background-color: #444a59;
+            color: #ffffff;
+            border-radius: 4px;
+        }
+
+        .leaflet-popup-tip-container {
+            background-color: #444a59;
         }
     </style>
 </head>
@@ -88,8 +90,8 @@
 <body>
     <header>
         <div class="container">
-            <h1>Spatial Data Explorer</h1>
-            <p class="subtitle">Interactive Geospatial Visualization Platform</p>
+            <h1>Sistem Informasi Geografis</h1>
+            <p class="subtitle">Peta Dubai</p>
         </div>
     </header>
 
@@ -100,106 +102,75 @@
     </div>
 
     <script>
-        var map = L.map('map', {
-            preferCanvas: true
-        }).setView([52.21288, 4.36974], 13);
+        var map = L.map('map').setView([25.5, 55.5], 13);
 
-        var osmLayer = L.tileLayer(
-            'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        var darkLayer = L.tileLayer(
+            'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
             {
-                attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+                attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
+                maxZoom: 18,
             }
-        );
+        ).addTo(map);
 
-        // Initialize raster layer without zoom restrictions
-        var rasterLayer = L.tileLayer("../static/tiles/{z}/{x}/{y}.png", {
+        var rasterLayer = L.tileLayer('../static/tiles/{z}/{x}/{y}.png', {
             tms: true,
-            opacity: 0.8,
-            attribution: "Raster Data from raster_data Table"
+            opacity: 0.75,
+            attribution: "Raster Data from PostgreSQL",
         });
 
-        var vectorLayerGroup = L.layerGroup();
-
-        var polygons = {{ geo_polygons | tojson}};
+        var polygons = {{ geo_polygons | tojson }};
         var polygonLayer = L.geoJSON(polygons, {
-            style: function (feature) {
-                return {
-                    fillColor: "#00ff9d",
-                    color: "#00cc7a",
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.3
-                };
+            style: {
+                fillColor: '#61dafb',
+                color: '#21a0f6',
+                weight: 2,
+                opacity: 0.9,
+                fillOpacity: 0.5,
             },
             onEachFeature: function (feature, layer) {
                 if (feature.properties && feature.properties.name) {
                     layer.bindPopup(`
-                        <div style="background: #2d2d2d; color: #ffffff; padding: 10px; border-radius: 4px;">
-                            <strong style="color: #00ff9d">${feature.properties.name}</strong>
-                            ${feature.properties.description ? '<br>' + feature.properties.description : ''}
-                        </div>
+                        <strong>${feature.properties.name}</strong><br>
+                        ${feature.properties.description || 'No description available'}
                     `);
                 }
             }
-        }).addTo(vectorLayerGroup);
+        });
 
         var points = {{ geo_points | tojson }};
         var pointLayer = L.geoJSON(points, {
             pointToLayer: function (feature, latlng) {
                 return L.circleMarker(latlng, {
-                    radius: 8,
-                    fillColor: "#00ff9d",
-                    color: "#000000",
+                    radius: 6,
+                    fillColor: '#21a0f6',
+                    color: '#0d233f',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.85
                 });
             },
             onEachFeature: function (feature, layer) {
                 if (feature.properties && feature.properties.name) {
                     layer.bindPopup(`
-                        <div style="background: #2d2d2d; color: #ffffff; padding: 10px; border-radius: 4px;">
-                            <strong style="color: #00ff9d">${feature.properties.name}</strong>
-                            ${feature.properties.description ? '<br>' + feature.properties.description : ''}
-                        </div>
+                        <strong>${feature.properties.name}</strong><br>
+                        ${feature.properties.description || 'No description available'}
                     `);
                 }
             }
-        }).addTo(vectorLayerGroup);
+        });
 
-        osmLayer.addTo(map);
-        vectorLayerGroup.addTo(map);
+        var vectorGroup = L.layerGroup([polygonLayer, pointLayer]);
 
-        var baseLayers = {
-            "Dark Map": osmLayer
-        };
-
-        var overlayLayers = {
-            "Vector Data": vectorLayerGroup,
+        L.control.layers(null, {
+            "Vector Data": vectorGroup,
             "Raster Data": rasterLayer
-        };
-
-        L.control.layers(null, overlayLayers).addTo(map);
-
-        L.control.scale({
-            imperial: false,
-            position: 'bottomright'
         }).addTo(map);
 
-        map.on('overlayadd', function (e) {
-            if (e.name === "Raster Data") {
-                vectorLayerGroup.remove();
-            }
-        });
-
-        map.on('overlayremove', function (e) {
-            if (e.name === "Raster Data") {
-                vectorLayerGroup.addTo(map);
-            }
-        });
+        L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
     </script>
+
     <footer>
-        <p>&copy; 2024 Andreas Sihotang | IF4036 - Sistem Informasi Geografis</p>
+        <p>&copy; 121149163 Ihsan Triyadi| sistem Informasi Geografis</p>
     </footer>
 </body>
 
